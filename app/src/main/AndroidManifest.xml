@@ -25,14 +25,18 @@
             </intent-filter>
         </activity>
 
+        <!-- launchMode singleTask means when Chrome redirects back,
+             Android opens this existing activity instead of a new one -->
         <activity
             android:name=".MainActivity"
             android:exported="true"
             android:screenOrientation="portrait"
+            android:launchMode="singleTask"
             android:configChanges="orientation|screenSize|keyboardHidden"
-            android:windowSoftInputMode="adjustResize"
-            android:launchMode="singleTask">
-            <intent-filter>
+            android:windowSoftInputMode="adjustResize">
+
+            <!-- Deep link — intercepts Railway URL when Chrome redirects back after Discord login -->
+            <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
@@ -40,6 +44,7 @@
                     android:scheme="https"
                     android:host="kii-akira-backen-production-f0d7.up.railway.app" />
             </intent-filter>
+
         </activity>
 
     </application>
