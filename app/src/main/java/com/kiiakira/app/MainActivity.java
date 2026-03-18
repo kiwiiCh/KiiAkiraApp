@@ -48,7 +48,6 @@ public class MainActivity extends AppCompatActivity {
         setupWebView();
         setupSwipeRefresh();
 
-        // Handle deep link if app was opened from Discord redirect
         if (getIntent() != null && getIntent().getData() != null) {
             String url = getIntent().getData().toString();
             if (url.startsWith(BASE_URL)) {
@@ -73,7 +72,8 @@ public class MainActivity extends AppCompatActivity {
         s.setMediaPlaybackRequiresUserGesture(false);
         s.setCacheMode(WebSettings.LOAD_DEFAULT);
         s.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
-        s.setUserAgentString(s.getUserAgentString() + " KiiAkiraApp/1.0");
+        // Pretend to be Chrome so Discord allows login
+        s.setUserAgentString("Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36");
 
         CookieManager c = CookieManager.getInstance();
         c.setAcceptCookie(true);
@@ -91,14 +91,13 @@ public class MainActivity extends AppCompatActivity {
                     return false;
                 }
 
-                // Discord OAuth authorize only — stay in WebView
+                // Discord OAuth authorize — stay in WebView
                 if (url.contains("discord.com/oauth2/authorize") ||
                     url.contains("discord.com/api/oauth2")) {
                     return false;
                 }
 
-                // All other Discord pages (login, MFA, passkey) — open Chrome
-                // Chrome supports passkeys/biometrics, WebView does not
+                // All other Discord pages — open Chrome (passkeys/MFA work there)
                 if (url.contains("discord.com")) {
                     try {
                         startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(url)));
