@@ -86,26 +86,30 @@ public class MainActivity extends AppCompatActivity {
             public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
                 String url = request.getUrl().toString();
 
-                // Your Railway site — always stay inside WebView
+                // Railway site — always stay in WebView
                 if (url.startsWith(BASE_URL)) {
                     return false;
                 }
 
-                // Discord OAuth pages — load inside WebView so login works
-                // and the callback redirects back to BASE_URL inside the app
-                if (url.startsWith("https://discord.com/oauth2") ||
-                    url.startsWith("https://discord.com/api/oauth2") ||
-                    url.startsWith("https://discord.com/login") ||
-                    url.contains("discord.com/oauth2/authorize")) {
-                    return false; // stay in WebView
+                // Discord OAuth authorize only — stay in WebView
+                if (url.contains("discord.com/oauth2/authorize") ||
+                    url.contains("discord.com/api/oauth2")) {
+                    return false;
                 }
 
-                // Everything else — open in external browser
+                // All other Discord pages (login, MFA, passkey) — open Chrome
+                // Chrome supports passkeys/biometrics, WebView does not
+                if (url.contains("discord.com")) {
+                    try {
+                        startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(url)));
+                    } catch (Exception e) { /* ignore */ }
+                    return true;
+                }
+
+                // Everything else — external browser
                 try {
                     startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(url)));
-                } catch (Exception e) {
-                    // ignore if no browser available
-                }
+                } catch (Exception e) { /* ignore */ }
                 return true;
             }
 
