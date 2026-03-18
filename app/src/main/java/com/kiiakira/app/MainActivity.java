@@ -26,8 +26,6 @@ import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 public class MainActivity extends AppCompatActivity {
 
     private static final String BASE_URL = "https://kii-akira-backen-production-f0d7.up.railway.app";
-    // Load with ?app=1 so website knows to show email-only login
-    private static final String APP_URL  = BASE_URL + "?app=1";
 
     private WebView webView;
     private SwipeRefreshLayout swipeRefresh;
@@ -50,9 +48,13 @@ public class MainActivity extends AppCompatActivity {
         setupWebView();
         setupSwipeRefresh();
 
-        if (getIntent() != null && getIntent().getData() != null) {
-            String url = getIntent().getData().toString();
+        // Handle deep link when Chrome redirects back after Discord login
+        Intent intent = getIntent();
+        if (intent != null && intent.getData() != null) {
+            String url = intent.getData().toString();
             if (url.startsWith(BASE_URL)) {
+                webView.setVisibility(View.VISIBLE);
+                offlineLayout.setVisibility(View.GONE);
                 webView.loadUrl(url);
                 return;
             }
@@ -60,6 +62,18 @@ public class MainActivity extends AppCompatActivity {
 
         if (isOnline()) loadApp();
         else showOffline();
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        // Handle deep link when app is already running
+        if (intent != null && intent.getData() != null) {
+            String url = intent.getData().toString();
+            if (url.startsWith(BASE_URL)) {
+                webView.loadUrl(url);
+            }
+        }
     }
 
     private void setupWebView() {
@@ -74,7 +88,6 @@ public class MainActivity extends AppCompatActivity {
         s.setMediaPlaybackRequiresUserGesture(false);
         s.setCacheMode(WebSettings.LOAD_DEFAULT);
         s.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
-        // Chrome UA so websites load correctly
         s.setUserAgentString("Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36");
 
         CookieManager c = CookieManager.getInstance();
@@ -88,9 +101,21 @@ public class MainActivity extends AppCompatActivity {
             public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
                 String url = request.getUrl().toString();
 
-                // Railway site — always stay in WebView
+                // Your Railway site — always stay in WebView
                 if (url.startsWith(BASE_URL)) {
                     return false;
+                }
+
+                // Discord OAuth — open in Chrome so login works properly
+                // After login Discord redirects to BASE_URL which Android
+                // intercepts via the deep link intent filter and opens the app
+                if (url.contains("discord.com") || url.contains("discordapp.com")) {
+                    try {
+                        Intent i = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+                        i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                        startActivity(i);
+                    } catch (Exception e) { /* ignore */ }
+                    return true;
                 }
 
                 // Everything else — external browser
@@ -159,7 +184,7 @@ public class MainActivity extends AppCompatActivity {
     private void loadApp() {
         offlineLayout.setVisibility(View.GONE);
         webView.setVisibility(View.VISIBLE);
-        webView.loadUrl(APP_URL);
+        webView.loadUrl(BASE_URL);
     }
 
     private void showOffline() {
