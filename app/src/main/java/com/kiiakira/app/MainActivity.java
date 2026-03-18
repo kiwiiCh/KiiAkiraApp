@@ -26,6 +26,8 @@ import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 public class MainActivity extends AppCompatActivity {
 
     private static final String BASE_URL = "https://kii-akira-backen-production-f0d7.up.railway.app";
+    // Load with ?app=1 so website knows to show email-only login
+    private static final String APP_URL  = BASE_URL + "?app=1";
 
     private WebView webView;
     private SwipeRefreshLayout swipeRefresh;
@@ -72,7 +74,7 @@ public class MainActivity extends AppCompatActivity {
         s.setMediaPlaybackRequiresUserGesture(false);
         s.setCacheMode(WebSettings.LOAD_DEFAULT);
         s.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
-        // Pretend to be Chrome so Discord allows login
+        // Chrome UA so websites load correctly
         s.setUserAgentString("Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36");
 
         CookieManager c = CookieManager.getInstance();
@@ -89,20 +91,6 @@ public class MainActivity extends AppCompatActivity {
                 // Railway site — always stay in WebView
                 if (url.startsWith(BASE_URL)) {
                     return false;
-                }
-
-                // Discord OAuth authorize — stay in WebView
-                if (url.contains("discord.com/oauth2/authorize") ||
-                    url.contains("discord.com/api/oauth2")) {
-                    return false;
-                }
-
-                // All other Discord pages — open Chrome (passkeys/MFA work there)
-                if (url.contains("discord.com")) {
-                    try {
-                        startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(url)));
-                    } catch (Exception e) { /* ignore */ }
-                    return true;
                 }
 
                 // Everything else — external browser
@@ -171,7 +159,7 @@ public class MainActivity extends AppCompatActivity {
     private void loadApp() {
         offlineLayout.setVisibility(View.GONE);
         webView.setVisibility(View.VISIBLE);
-        webView.loadUrl(BASE_URL);
+        webView.loadUrl(APP_URL);
     }
 
     private void showOffline() {
