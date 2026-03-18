@@ -48,6 +48,15 @@ public class MainActivity extends AppCompatActivity {
         setupWebView();
         setupSwipeRefresh();
 
+        // Handle deep link if app was opened from Discord redirect
+        if (getIntent() != null && getIntent().getData() != null) {
+            String url = getIntent().getData().toString();
+            if (url.startsWith(BASE_URL)) {
+                webView.loadUrl(url);
+                return;
+            }
+        }
+
         if (isOnline()) loadApp();
         else showOffline();
     }
@@ -76,16 +85,28 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
                 String url = request.getUrl().toString();
-                if (url.startsWith(BASE_URL)) return false;
-                if (url.startsWith("https://discord.com")) {
-                    startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(url)));
-                    return true;
+
+                // Your Railway site — always stay inside WebView
+                if (url.startsWith(BASE_URL)) {
+                    return false;
                 }
-                if (!url.startsWith(BASE_URL)) {
-                    startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(url)));
-                    return true;
+
+                // Discord OAuth pages — load inside WebView so login works
+                // and the callback redirects back to BASE_URL inside the app
+                if (url.startsWith("https://discord.com/oauth2") ||
+                    url.startsWith("https://discord.com/api/oauth2") ||
+                    url.startsWith("https://discord.com/login") ||
+                    url.contains("discord.com/oauth2/authorize")) {
+                    return false; // stay in WebView
                 }
-                return false;
+
+                // Everything else — open in external browser
+                try {
+                    startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(url)));
+                } catch (Exception e) {
+                    // ignore if no browser available
+                }
+                return true;
             }
 
             @Override
@@ -197,4 +218,4 @@ public class MainActivity extends AppCompatActivity {
     @Override protected void onResume() { super.onResume(); webView.onResume(); }
     @Override protected void onPause() { super.onPause(); webView.onPause(); CookieManager.getInstance().flush(); }
     @Override protected void onDestroy() { super.onDestroy(); webView.destroy(); }
-                  }
+}
